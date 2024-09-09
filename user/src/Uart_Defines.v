@@ -1,0 +1,2 @@
+`define SYS_CLK 100000000
+`define UART_BAUD_RATE 115200
