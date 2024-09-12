@@ -31,7 +31,7 @@ module Baud_Generator #(
     output o_u_clk
 );
 //localparam calculate
-localparam DIVIDER_FACTOR = (P_SYS_CLK/P_UART_BAUD_RATE);
+localparam DIVIDER_FACTOR = ((P_SYS_CLK)/P_UART_BAUD_RATE);
 localparam HALF_DIVIDER_FACTOR = $floor((DIVIDER_FACTOR-1)/2)+1;
 localparam CNT_BIT = $clog2(DIVIDER_FACTOR);
 //reg define
