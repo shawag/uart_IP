@@ -33,23 +33,23 @@ module Uart_Transmitter #(
     output                                    o_uart_tx,
 
     input         [P_UART_DATA_WIDTH-1:0]     i_uart_tx_data  ,
+    //tx valid signal, 
     input                                     i_uart_tx_valid ,
+    //tx ready signal
     output                                    o_uart_tx_ready 
 );
-
+//reg output define and assign
 reg                             ro_uart_tx;
 reg                             ro_uart_tx_ready;
 assign  o_uart_tx = ro_uart_tx;
-assign  o_user_tx_ready = ro_uart_tx_ready;
-
+assign  o_uart_tx_ready = ro_uart_tx_ready;
+//reg define
 reg   [3:0]                       r_cnt;
 reg   [P_UART_DATA_WIDTH-1:0]     r_uart_tx_data;
 reg                               r_tx_check;
-
-
-
+//indicate transmit process
 assign w_tx_active = i_uart_tx_valid & o_uart_tx_ready;
-//ready
+//logic for tx ready, active low during tranmission
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         ro_uart_tx_ready <= 1'b1;
@@ -68,7 +68,7 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     end
 end
 
-//r_cnt
+//counter for trnsmition process
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         r_cnt <= 4'd0;
@@ -87,7 +87,7 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     end
 end
 
-//tx_data
+//tranmit data during tranmission
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         r_uart_tx_data <= 'd0;
@@ -103,7 +103,7 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     end
 
 end
-//uart_tx'
+//pairty bit and stop bit transmition
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         ro_uart_tx <= 1'b1;
@@ -128,7 +128,7 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     end
 end
 
-//check
+//parity bit calculation
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         r_tx_check <= 1'b0;

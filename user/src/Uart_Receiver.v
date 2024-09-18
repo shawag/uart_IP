@@ -31,8 +31,9 @@ module Uart_Receiver #(
     input i_u_rst,
 
     input i_uart_rx,
-
+    //uart recieve data out
     output [P_UART_DATA_WIDTH-1:0] o_uart_rx_data,
+    //rx valid signal,generate a high pulse when data recieve down
     output o_uart_rx_valid
 );
 //reg output define and assign
@@ -42,19 +43,10 @@ reg                         ro_uart_rx_valid;
 assign o_uart_rx_data = ro_uart_rx_data; 
 assign o_uart_rx_valid = ro_uart_rx_valid;
 //reg define
-reg     [1:0]                       r_uart_rx;
 reg     [3:0]                       r_cnt;
 reg                                 r_rx_check;
 
-always @(posedge i_u_clk or posedge i_u_rst) begin
-    if(i_u_rst) begin
-        r_uart_rx <= 2'b11;  //协议默认电平为高
-    end
-    else begin
-        r_uart_rx <= {r_uart_rx[0],i_uart_rx};
-    end
-end
-
+//counter controller to comntrol data recieve process
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         r_cnt <= 4'd0;
@@ -65,27 +57,27 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     else if(r_cnt == P_UART_DATA_WIDTH + 1 + P_UART_STOP_WIDTH && P_UART_CHECK >0) begin
         r_cnt <= 4'd0;
     end
-    else if(r_uart_rx[1] == 0 || r_cnt>0) begin
+    else if(i_uart_rx == 0 || r_cnt>0) begin
         r_cnt <= r_cnt +1'b1;
     end
     else begin
         r_cnt <= r_cnt;
     end
 end
-
+//data recieve
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         ro_uart_rx_data <= 'd0;
     end
     else if(r_cnt >= 1 && r_cnt <= P_UART_DATA_WIDTH) begin
-        ro_uart_rx_data <= {r_uart_rx[1],ro_uart_rx_data[P_UART_DATA_WIDTH-1:1]};
+        ro_uart_rx_data <= {i_uart_rx,ro_uart_rx_data[P_UART_DATA_WIDTH-1:1]};
     end
     else begin
         ro_uart_rx_data <= ro_uart_rx_data;
     end
 end
 
-
+//loigic for rx valid signal
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         ro_uart_rx_valid <= 1'b0;
@@ -93,10 +85,10 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     else if(r_cnt ==P_UART_DATA_WIDTH && P_UART_CHECK == 0) begin
         ro_uart_rx_valid <= 1'b1;
     end
-    else if(r_cnt == P_UART_DATA_WIDTH+1 && P_UART_CHECK == 1 && r_uart_rx[1] == ~r_rx_check)begin
+    else if(r_cnt == P_UART_DATA_WIDTH+1 && P_UART_CHECK == 1 && i_uart_rx == ~r_rx_check)begin
         ro_uart_rx_valid <= 1'b1;
     end
-    else if(r_cnt == P_UART_DATA_WIDTH+1 && P_UART_CHECK == 2 && r_uart_rx[1] == r_rx_check) begin
+    else if(r_cnt == P_UART_DATA_WIDTH+1 && P_UART_CHECK == 2 && i_uart_rx == r_rx_check) begin
         ro_uart_rx_valid <= 1'b1;
     end
     else begin
@@ -104,13 +96,13 @@ always @(posedge i_u_clk or posedge i_u_rst) begin
     end
 end
 
-
+//parity bit calculation
 always @(posedge i_u_clk or posedge i_u_rst) begin
     if(i_u_rst) begin
         r_rx_check <= 1'b0;
     end
     else if(r_cnt >= 1 && r_cnt <= P_UART_DATA_WIDTH)begin
-        r_rx_check <= r_rx_check ^ r_uart_rx[1];
+        r_rx_check <= r_rx_check ^ i_uart_rx;
     end
     else begin
         r_rx_check <= 1'b0;

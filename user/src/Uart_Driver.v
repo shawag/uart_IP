@@ -21,7 +21,7 @@
 `include "Timescale.v"
 `include "Uart_Defines.v"
 
-module UART_DRIVE #(
+module Uart_Driver #(
     parameter       P_SYSTEM_CLK         = `SYS_CLK          ,
     parameter       P_UART_BUADRATE      = `UART_BAUD_RATE   ,
     parameter       P_UART_DATA_WIDTH    = `UART_DATA_WIDTH  ,
@@ -74,8 +74,8 @@ assign		o_user_rx_valid = r_user_rx_valid_2;
 localparam                              P_CLK_DIV_NUMBER = P_SYSTEM_CLK / P_UART_BUADRATE;
 
 Baud_Generator  #(
-	.SYSTEM_CLK     	( P_SYSTEM_CLK  ),
-	.UART_BUAD_RATE 	( P_UART_BUADRATE )
+	.P_SYS_CLK     	( P_SYSTEM_CLK  ),
+	.P_UART_BAUD_RATE 	( P_UART_BUADRATE )
 )
 u0_Baud_Generator
 (
@@ -85,8 +85,8 @@ u0_Baud_Generator
 );
 
 Baud_Generator #(
-	.SYSTEM_CLK     	( P_SYSTEM_CLK  ),
-	.UART_BUAD_RATE 	( P_UART_BUADRATE )
+	.P_SYS_CLK     	( P_SYSTEM_CLK  ),
+	.P_UART_BAUD_RATE 	( P_UART_BUADRATE )
 )
 u1_Baud_Generator
 (
@@ -97,7 +97,7 @@ u1_Baud_Generator
 
 
 Rst_Gen #(
-	.RST_CYCLE 	( P_RST_CYCLE  )
+	.P_RST_CYCLE 	( P_RST_CYCLE  )
 )
 u0_Rst_Gen
 (
@@ -107,9 +107,9 @@ u0_Rst_Gen
 
 
 Uart_Receiver #(
-	.UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
-	.UART_STOP_WIDTH 	( P_UART_STOP_WIDTH  ),
-	.UART_CHECK      	( P_UART_CHECK       )
+	.P_UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
+	.P_UART_STOP_WIDTH 	( P_UART_STOP_WIDTH  ),
+	.P_UART_CHECK      	( P_UART_CHECK       )
 )
 u0_Uart_Receiver
 (
@@ -122,9 +122,9 @@ u0_Uart_Receiver
 
 
 Uart_Transmitter #(
-	.UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
-	.UART_STOP_WIDTH 	( P_UART_STOP_WIDTH  ),
-	.UART_CHECK      	( P_UART_CHECK       )
+	.P_UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
+	.P_UART_STOP_WIDTH 	( P_UART_STOP_WIDTH  ),
+	.P_UART_CHECK      	( P_UART_CHECK       )
 )
 u0_Uart_Transmitter
 (
@@ -136,6 +136,8 @@ u0_Uart_Transmitter
 	.o_uart_tx_ready 	( o_user_tx_ready  )
 );
 
+
+//oversample reg to sample the negedge occur when recieve start bit
 always @(posedge clock or posedge reset) begin
     if(reset) begin
         r_rx_overvaule <= 3'd0;
@@ -147,7 +149,7 @@ always @(posedge clock or posedge reset) begin
 		r_rx_overvaule <= 3'b111;
 	end
 end
-
+//synchronize FF1 of overvalue
 always @(posedge clock or posedge reset) begin
 	if(reset) begin
 		r_rx_overvaule_1 <= 3'd0;

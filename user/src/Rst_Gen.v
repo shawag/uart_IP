@@ -33,6 +33,7 @@ reg [CNT_BIT-1:0]     r_cnt='d0;
 reg                   ro_rst = 1;
 
 assign o_rst = ro_rst;
+//cycle counter
 always@(posedge i_clk) begin
     if(r_cnt == P_RST_CYCLE -1 || P_RST_CYCLE == 0) begin
         r_cnt <= r_cnt;
@@ -41,7 +42,7 @@ always@(posedge i_clk) begin
         r_cnt <= r_cnt + 1'b1;
     end
 end
-
+//output rst signal
 always@(posedge i_clk) begin
     if(r_cnt == P_RST_CYCLE -1 || P_RST_CYCLE == 0) begin
         ro_rst <= 1'b0;
