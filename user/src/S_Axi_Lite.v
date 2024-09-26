@@ -319,14 +319,14 @@ end
 
 always @(posedge S_AXI_ACLK) begin
     if(~S_AXI_ARESETN)
-        r_user_rx_valid <= 1'b1;
+        r_user_rx_valid <= 1'b0;
     else
         r_user_rx_valid <= i_user_rx_valid;
 end
 
 always @(posedge S_AXI_ACLK) begin
     if(~S_AXI_ARESETN)
-        r_user_tx_ready <= 1'b1;
+        r_user_tx_ready <= 1'b0;
     else
         r_user_tx_ready <= i_user_tx_ready;
 end
