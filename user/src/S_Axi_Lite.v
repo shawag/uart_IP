@@ -130,6 +130,7 @@ wire axi_reg_rden = r_axi_rvalid && S_AXI_RREADY;
 assign user_rx_valid_posedge = i_user_rx_valid && (~r_user_rx_valid);
 assign o_user_tx_data = r_axi_reg2[`UART_DATA_WIDTH-1:0];
 assign user_tx_ready_posedge = i_user_tx_ready && (~r_user_tx_ready);
+assign o_user_tx_valid = ro_user_tx_valid;
 
 
 //logic
