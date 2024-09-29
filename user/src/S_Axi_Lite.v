@@ -206,10 +206,15 @@ always @(posedge S_AXI_ACLK) begin
 	if(~S_AXI_ARESETN)
 		r_axi_bresp <= 2'b00;
 	else begin
-		if(r_axi_awready && ~r_axi_bvalid && r_axi_wready && S_AXI_WVALID)
+		//this bresp indicates the transmission error is error when tx is transmitting data
+		if(~r_axi_bvalid && r_axi_wready && S_AXI_WVALID && ~i_user_tx_ready)
+			r_axi_bresp <= 2'b10;
+		else if(r_axi_awready && ~r_axi_bvalid && r_axi_wready && S_AXI_WVALID)
+			r_axi_bresp <= 2'b00;
+		else if(i_user_tx_ready)
 			r_axi_bresp <= 2'b00;
 		else
-			r_axi_bresp <= 2'b00;
+			r_axi_bresp <= r_axi_bresp;
 	end
 end
 //arready signal generator
