@@ -2,7 +2,7 @@
 `include "Uart_Defines.v"
 module Axi_Lite_Uart #(
     parameter integer P_S_AXI_DATA_WIDTH	= 32,
-    parameter integer P_S_AXI_ADDR_WIDTH	= 4
+    parameter integer P_S_AXI_ADDR_WIDTH	= 16
 )
 (
     input wire  S_AXI_ACLK,

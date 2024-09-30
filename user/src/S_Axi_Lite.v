@@ -128,7 +128,7 @@ reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg3;
 wire axi_reg_wren = r_axi_wready && S_AXI_WVALID ;
 wire axi_reg_rden = r_axi_rvalid && S_AXI_RREADY;
 assign user_rx_valid_posedge = i_user_rx_valid && (~r_user_rx_valid);
-assign o_user_tx_data = r_axi_reg2[`UART_DATA_WIDTH-1:0];
+assign o_user_tx_data = r_axi_reg1[`UART_DATA_WIDTH-1:0];
 assign user_tx_ready_posedge = i_user_tx_ready && (~r_user_tx_ready);
 assign o_user_tx_valid = ro_user_tx_valid;
 
@@ -266,29 +266,29 @@ end
 //write reg process
 always @(posedge S_AXI_ACLK) begin
 	if(~S_AXI_ARESETN) begin
-		r_axi_reg0 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 		r_axi_reg1 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 		r_axi_reg2 <= {P_S_AXI_DATA_WIDTH{1'b0}};
+		r_axi_reg3 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 	end
 	else begin
-		if(axi_reg_wren) begin
-			case(r_axi_awaddr[1:0]) 
-				2'b00: r_axi_reg0 <= S_AXI_WDATA;
-				2'b01: r_axi_reg1 <= S_AXI_WDATA;
-				2'b10: r_axi_reg2 <= S_AXI_WDATA;
+		if(axi_reg_wren && r_axi_awaddr[P_S_AXI_ADDR_WIDTH-1:4]==0) begin
+			case(r_axi_awaddr[3:0]) 
+				4'h04: r_axi_reg1 <= S_AXI_WDATA;
+				4'h08: r_axi_reg2 <= S_AXI_WDATA;
+				4'h0c: r_axi_reg3 <= S_AXI_WDATA;
 				//2'b11: r_axi_reg3 <= S_AXI_WDATA;
 				default: begin
-					r_axi_reg0 <= r_axi_reg0;
 					r_axi_reg1 <= r_axi_reg1;
 					r_axi_reg2 <= r_axi_reg2;
+					r_axi_reg3 <= r_axi_reg3;
 					//r_axi_reg3 <= r_axi_reg3;
 				end
 			endcase
 		end
 		else begin
-			r_axi_reg0 <= r_axi_reg0;
 			r_axi_reg1 <= r_axi_reg1;
 			r_axi_reg2 <= r_axi_reg2;
+			r_axi_reg3 <= r_axi_reg3;
 			//r_axi_reg3 <= r_axi_reg3;
 		end
 	end
@@ -296,11 +296,11 @@ end
 
 always @(posedge S_AXI_ACLK) begin
     if(~S_AXI_ARESETN)
-        r_axi_reg3 <= {P_S_AXI_DATA_WIDTH{1'b0}}; 
+        r_axi_reg0 <= {P_S_AXI_DATA_WIDTH{1'b0}}; 
     else if(user_rx_valid_posedge)
-        r_axi_reg3 <= {{(P_S_AXI_DATA_WIDTH-`UART_DATA_WIDTH){1'b0}},i_user_rx_data};
+        r_axi_reg0 <= {{(P_S_AXI_DATA_WIDTH-`UART_DATA_WIDTH){1'b0}},i_user_rx_data};
     else
-        r_axi_reg3 <= r_axi_reg3;
+        r_axi_reg0 <= r_axi_reg0;
 end
 
 
@@ -309,12 +309,12 @@ always @(posedge S_AXI_ACLK) begin
 	if(~S_AXI_ARESETN)
 		r_axi_rdata <= {P_S_AXI_DATA_WIDTH{1'b0}};
 	else begin
-		if(axi_reg_rden)
-			case(r_axi_araddr[1:0])
-			2'b00: r_axi_rdata = r_axi_reg0;
-			2'b01: r_axi_rdata = r_axi_reg1;
-			2'b10: r_axi_rdata = r_axi_reg2;
-			2'b11: r_axi_rdata = r_axi_reg3;
+		if(axi_reg_rden && r_axi_awaddr[P_S_AXI_ADDR_WIDTH-1:4]==0)
+			case(r_axi_araddr[3:0])
+			4'h00: r_axi_rdata = r_axi_reg0;
+			4'h04: r_axi_rdata = r_axi_reg1;
+			4'h08: r_axi_rdata = r_axi_reg2;
+			4'h0c: r_axi_rdata = r_axi_reg3;
 			default: r_axi_rdata = {P_S_AXI_DATA_WIDTH{1'b0}};
 			endcase
 		else
@@ -341,7 +341,7 @@ always @(posedge S_AXI_ACLK) begin
     if(~S_AXI_ARESETN)
         ro_user_tx_valid <= 1'b0;
     else begin
-        if(r_axi_awaddr[1:0]==2'b10 && r_axi_rvalid && S_AXI_RREADY)
+        if(r_axi_awaddr[3:0]==4'h04 && r_axi_rvalid && S_AXI_RREADY)
             ro_user_tx_valid <= 1'b1;
         else if(user_tx_ready_posedge)
             ro_user_tx_valid <= 1'b0;

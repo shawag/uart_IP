@@ -1,6 +1,6 @@
 `include "../src/Timescale.v"
 `include "../src/Uart_Defines.v"
-`timescale 1ns / 1ns
+
 //
 // Company: 
 // Engineer: 
@@ -93,7 +93,7 @@ always_ff@(posedge ACLK,negedge ARESETn)
 if(!ARESETn)
     AWADDR<=32'd0;
 else if(start_write)
-    AWADDR<=32'd2;
+    AWADDR<=32'd4;
 //AWPROT
 always_comb 
 begin
@@ -152,7 +152,7 @@ always_ff@(posedge ACLK,negedge ARESETn)
 if(!ARESETn)
     ARADDR<=0;
 else if(start_read)
-    ARADDR<=32'd1;
+    ARADDR<=32'd0;
 //ARPROT
 always_comb 
 begin
