@@ -36,7 +36,7 @@ module Uart_Top
 	output 								   o_uart_tx,
 	input      [P_UART_DATA_WIDTH-1:0]     i_user_tx_data      ,
     input                                  i_user_tx_valid     ,
-    input                                  o_user_tx_ready     ,
+  	output                                 o_user_tx_ready     ,
 
     output     [P_UART_DATA_WIDTH-1:0]     o_user_rx_data      ,
     output                                 o_user_rx_valid     ,
