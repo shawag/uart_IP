@@ -31,7 +31,7 @@ module axilite_uart_tb();
 
     Axi_Lite_Uart  #(
         .P_S_AXI_DATA_WIDTH 	( 32        )  ,
-	    .P_S_AXI_ADDR_WIDTH 	( 32        )  ,
+	    .P_S_AXI_ADDR_WIDTH 	( 16        )  ,
         .P_SYSTEM_CLK           (100_000_000)  ,
         .P_UART_BUADRATE        (1152000    )  ,
         .P_UART_DATA_WIDTH      (8          )  ,
@@ -89,10 +89,10 @@ module axilite_uart_tb();
         s_axi_araddr    =   16'h0   ;
         s_axi_arvalid   =   1'b0    ;
         s_axi_rready    =   1'b0    ;
-*/
+        */
         #1500
         async_resetn    =   1'b1    ;
-//        s_axi_bready    =   1'b1    ;
+        //s_axi_bready    =   1'b1    ;
 
         #1500                       
         start_write=0;
