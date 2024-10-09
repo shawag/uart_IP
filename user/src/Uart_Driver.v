@@ -20,14 +20,7 @@
 	//wavedom
 	`timescale 1ns / 1ps
 
-	module Uart_Driver #(
-	    parameter       P_SYSTEM_CLK         = 100_000_000          ,
-	    parameter       P_UART_BUADRATE      = 1152000   ,
-	    parameter       P_UART_DATA_WIDTH    = 8  ,
-	    parameter       P_UART_STOP_WIDTH    = 1  ,
-	    //0 for none, 1 for odd, 2 for even
-	    parameter       P_UART_CHECK         = 0       
-	) 
+	module Uart_Driver 
 	(
 	    input                                  clock           ,
 	    input                                  reset           ,
@@ -39,12 +32,17 @@
 		output                                 o_uart_rts			,
 	
 
-	    input      [P_UART_DATA_WIDTH-1:0]     i_user_tx_data      ,
+	    input      [7:0]     i_user_tx_data      ,
 	    input                                  i_user_tx_valid     ,
 	    output                                 o_user_tx_ready     ,
 
-	    output     [P_UART_DATA_WIDTH-1:0]     o_user_rx_data      ,
-	    output                                 o_user_rx_valid     
+	    output     [7:0]     o_user_rx_data      ,
+	    output                                 o_user_rx_valid     ,
+
+		input		[23:0]						i_div_num,
+		input		[3:0]						i_data_bit,
+		input 		[1:0]						i_stop_bit,
+		input	 	[1:0]						i_check_bit
 
 	   // output                                 o_user_clk          ,
 	 //   output                                 o_user_rst
@@ -54,15 +52,15 @@
 	wire                            w_uart_baudclk_rst   ;
 	wire							w_uart_rx_clk		 ;
 	reg								r_uart_rx_clk_rst	 ;							
-	wire [P_UART_DATA_WIDTH-1:0]    w_user_rx_data;
+	wire [7:0]    w_user_rx_data;
 	wire                            w_user_rx_valid;      
 
 	reg								r_rx_overlock;
 	reg  [2:0]                      r_rx_overvaule;
 	reg  [2:0]                      r_rx_overvaule_1;
 
-	reg	[P_UART_DATA_WIDTH-1:0]		r_user_rx_data_1;
-	reg	[P_UART_DATA_WIDTH-1:0]		r_user_rx_data_2;
+	reg	[7:0]		r_user_rx_data_1;
+	reg	[7:0]		r_user_rx_data_2;
 	reg								r_user_rx_valid ;
 	reg								r_user_rx_valid_1;
 	reg								r_user_rx_valid_2;
@@ -74,27 +72,20 @@
 	assign		o_user_rx_valid = r_user_rx_valid_2;
 
 
-	localparam                              P_CLK_DIV_NUMBER = P_SYSTEM_CLK / P_UART_BUADRATE;
 
-	Baud_Generator  #(
-		.P_SYS_CLK     	( P_SYSTEM_CLK  ),
-		.P_UART_BAUD_RATE 	( P_UART_BUADRATE )
-	)
-	u0_Baud_Generator
+	Baud_Generator  u0_Baud_Generator
 	(
 		.clock 	    ( clock          ),
 		.reset     	( reset          ),
+		.i_div_num  ( i_div_num       ),
 		.o_u_clk   	( w_uart_baudclk     )
 	);
 
-	Baud_Generator #(
-		.P_SYS_CLK     	( P_SYSTEM_CLK  ),
-		.P_UART_BAUD_RATE 	( P_UART_BUADRATE )
-	)
-	u1_Baud_Generator
+	Baud_Generator u1_Baud_Generator
 	(
 		.clock   	( clock          ) ,
 		.reset     	( r_uart_rx_clk_rst  ),
+		.i_div_num  ( i_div_num       ),
 		.o_u_clk   	( w_uart_rx_clk      )
 	);
 
@@ -109,34 +100,30 @@
 	);
 */
 
-	Uart_Receiver #(
-		.P_UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
-		.P_UART_STOP_WIDTH 	( P_UART_STOP_WIDTH  ),
-		.P_UART_CHECK      	( P_UART_CHECK       )
-	)
-	u0_Uart_Receiver
+	Uart_Receiver u0_Uart_Receiver
 	(
 		.i_u_clk           	( w_uart_rx_clk      ),
 		.i_u_rst           	( reset  ),
 		.i_uart_rx       	( i_uart_rx        ),
 		.o_uart_rx_data  	( w_user_rx_data   ),
-		.o_uart_rx_valid 	( w_user_rx_valid  )
+		.o_uart_rx_valid 	( w_user_rx_valid  ),
+		.i_data_bit			( i_data_bit ),
+		.i_stop_bit			( i_stop_bit ),
+		.i_check_bit		( i_check_bit )
 	);
 
 
-	Uart_Transmitter #(
-		.P_UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
-		.P_UART_STOP_WIDTH 	( P_UART_STOP_WIDTH  ),
-		.P_UART_CHECK      	( P_UART_CHECK       )
-	)
-	u0_Uart_Transmitter
+	Uart_Transmitter u0_Uart_Transmitter
 	(
 		.i_u_clk           	( w_uart_baudclk            ),
 		.i_u_rst           	( reset            ),
 		.o_uart_tx       	( o_uart_tx        ),
 		.i_uart_tx_data  	( i_user_tx_data   ),
 		.i_uart_tx_valid 	( i_user_tx_valid  ),
-		.o_uart_tx_ready 	( o_user_tx_ready  )
+		.o_uart_tx_ready 	( o_user_tx_ready  ),
+		.i_data_bit			( i_data_bit ),
+		.i_stop_bit			( i_stop_bit ),
+		.i_check_bit		( i_check_bit )
 	);
 
 

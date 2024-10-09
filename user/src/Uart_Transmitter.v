@@ -20,19 +20,17 @@
     //wavedom
     `timescale 1ns / 1ps
 
-    module Uart_Transmitter #(
-        parameter       P_UART_DATA_WIDTH    = 8   ,
-        parameter       P_UART_STOP_WIDTH    = 1   ,
-        //0 for none, 1 for odd, 2 for even
-        parameter       P_UART_CHECK         = 0      
-    ) 
+    module Uart_Transmitter
     (
         input                                     i_u_clk           ,
         input                                     i_u_rst           ,
+        input [3:0]                               i_data_bit, 
+        input [1:0]                               i_stop_bit ,
+        input [1:0]                               i_check_bit,
 
         output                                    o_uart_tx,
 
-        input         [P_UART_DATA_WIDTH-1:0]     i_uart_tx_data  ,
+        input         [7:0]                       i_uart_tx_data  ,
         //tx valid signal, 
         input                                     i_uart_tx_valid ,
         //tx ready signal
@@ -45,7 +43,7 @@
     assign  o_uart_tx_ready = ro_uart_tx_ready;
     //reg define
     reg   [3:0]                       r_cnt;
-    reg   [P_UART_DATA_WIDTH-1:0]     r_uart_tx_data;
+    reg   [7:0]                       r_uart_tx_data;
     reg                               r_tx_check;
     //indicate transmit process
     assign w_tx_active = i_uart_tx_valid & o_uart_tx_ready;
@@ -57,10 +55,10 @@
         else if(w_tx_active) begin
             ro_uart_tx_ready <= 1'b0;
         end
-        else if(r_cnt==P_UART_DATA_WIDTH + P_UART_STOP_WIDTH - 1&& P_UART_CHECK ==0) begin
+        else if(r_cnt==i_data_bit + i_stop_bit - 1&& i_check_bit ==0) begin
             ro_uart_tx_ready <= 1'b1;
         end
-        else if(r_cnt==P_UART_DATA_WIDTH + P_UART_STOP_WIDTH && P_UART_CHECK > 0) begin
+        else if(r_cnt==i_data_bit + i_stop_bit && i_check_bit > 0) begin
             ro_uart_tx_ready <= 1'b1;
         end
         else begin
@@ -73,10 +71,10 @@
         if(i_u_rst) begin
             r_cnt <= 4'd0;
         end
-        else if(r_cnt == P_UART_DATA_WIDTH + P_UART_STOP_WIDTH && P_UART_CHECK == 0) begin
+        else if(r_cnt == i_data_bit + i_stop_bit && i_check_bit == 0) begin
             r_cnt <= 4'd0;
         end
-        else if(r_cnt == P_UART_DATA_WIDTH + P_UART_STOP_WIDTH + 1 && P_UART_CHECK > 0) begin
+        else if(r_cnt == i_data_bit + i_stop_bit + 1 && i_check_bit > 0) begin
             r_cnt <= 4'd0;
         end
         else if(!ro_uart_tx_ready) begin
@@ -111,13 +109,13 @@
         else if(w_tx_active) begin
             ro_uart_tx <= 1'b0;
         end
-        else if(r_cnt == P_UART_DATA_WIDTH && P_UART_CHECK > 0) begin
-            ro_uart_tx <= P_UART_CHECK == 1? ~r_tx_check : r_tx_check;
+        else if(r_cnt == i_data_bit && i_check_bit > 0) begin
+            ro_uart_tx <= i_check_bit == 1? ~r_tx_check : r_tx_check;
         end
-        else if(r_cnt >= P_UART_DATA_WIDTH && P_UART_CHECK == 0) begin
+        else if(r_cnt >= i_data_bit && i_check_bit == 0) begin
             ro_uart_tx <= 1'b1;
         end
-        else if(r_cnt >= P_UART_DATA_WIDTH +1 && P_UART_CHECK >0) begin
+        else if(r_cnt >= i_data_bit +1 && i_check_bit >0) begin
             ro_uart_tx <= 1'b1;
         end
         else if(!ro_uart_tx_ready) begin
@@ -133,7 +131,7 @@
         if(i_u_rst) begin
             r_tx_check <= 1'b0;
         end
-        else if(r_cnt == P_UART_DATA_WIDTH) begin
+        else if(r_cnt == i_data_bit) begin
             r_tx_check <= 1'b0;
         end
         else begin

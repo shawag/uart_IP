@@ -16,39 +16,38 @@
     //wavedom
     `timescale 1ns / 1ps
 
-    module Baud_Generator #( 
-        //system clock frequency (unit:MHz)
-        parameter P_SYS_CLK = 100_000_000 ,
-        //uart baud rate (unit:bps)
-        parameter P_UART_BAUD_RATE = 1152000
-
-    )
+    module Baud_Generator 
     (
         //system clock
         input  clock,
         //system reset, active high
         input  reset,
+
+        input [23:0] i_div_num ,
         //uart clock output
         output o_u_clk
     );
     //localparam calculate
+    /*
     localparam DIVIDER_FACTOR = ((P_SYS_CLK)/P_UART_BAUD_RATE);
     localparam HALF_DIVIDER_FACTOR = $floor((DIVIDER_FACTOR-1)/2)+1;
     localparam CNT_BIT = $clog2(DIVIDER_FACTOR);
+    */
+    wire [23:0] div_num_half = i_div_num <<< 1;
     //reg define
     //reg output
     reg               ro_u_clk;
     //divider cnt
-    reg [CNT_BIT-1:0] div_cnt;
+    reg [23:0] div_cnt;
     //connect output to reg
     assign o_u_clk = ro_u_clk;
     //logic of cnt divider
     always@(posedge clock or posedge reset) begin
         if(reset) begin
-            div_cnt <= {CNT_BIT{1'b0}};
+            div_cnt <= {24{1'b0}};
         end
-        else if(div_cnt == DIVIDER_FACTOR-1) begin
-            div_cnt <= {CNT_BIT{1'b0}}; 
+        else if(div_cnt == i_div_num - 1'b1) begin
+            div_cnt <= {24{1'b0}}; 
         end
         else begin
             div_cnt <= div_cnt + 1'b1;
@@ -59,7 +58,7 @@
         if(reset) begin
             ro_u_clk <= 1'b0;
         end
-        else if(div_cnt <= HALF_DIVIDER_FACTOR) begin
+        else if(div_cnt <= div_num_half) begin
             ro_u_clk <= 1'b1;
         end
         else begin
