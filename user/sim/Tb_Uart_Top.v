@@ -6,8 +6,6 @@
  * @FilePath: \uart\user\sim\TB_UART_DRIVE.v
  * @Description: 
  */
-`include "../src/Timescale.v"
-`include "../src/Uart_Defines.v"
 module Tb_Uart_Top();
 
 /****仿真语法、产生时钟与复位****/
@@ -45,12 +43,12 @@ assign w_user_active = r_user_tx_valid & w_user_tx_ready;
 
 
 Uart_Driver #(
-	.P_SYSTEM_CLK      	( `SYS_CLK         ),
-	.P_UART_BUADRATE   	( `UART_BAUD_RATE  ),
-	.P_UART_DATA_WIDTH 	( `UART_DATA_WIDTH ),
-	.P_UART_STOP_WIDTH 	( `UART_STOP_WIDTH ),
-	.P_UART_CHECK      	( `UART_CHECK      ),
-	.P_RST_CYCLE       	( `UART_RST_CYCLE  )
+	.P_SYSTEM_CLK      	( 100000000         ),
+	.P_UART_BUADRATE   	( 1152000  ),
+	.P_UART_DATA_WIDTH 	( 8 ),
+	.P_UART_STOP_WIDTH 	( 1 ),
+	.P_UART_CHECK      	( 0      ),
+	.P_RST_CYCLE       	( 10  )
 )
 u_UART_DRIVE
 (                  
