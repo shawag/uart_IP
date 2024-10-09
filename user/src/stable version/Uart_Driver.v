@@ -26,7 +26,8 @@
 	    parameter       P_UART_DATA_WIDTH    = 8  ,
 	    parameter       P_UART_STOP_WIDTH    = 1  ,
 	    //0 for none, 1 for odd, 2 for even
-	    parameter       P_UART_CHECK         = 0       
+	    parameter       P_UART_CHECK         = 0       ,
+	    parameter       P_RST_CYCLE          = 10 
 	) 
 	(
 	    input                                  clock           ,
@@ -34,10 +35,6 @@
 	
 	    input                                  i_uart_rx           ,
 	    output                                 o_uart_tx           ,
-
-		input                                  i_uart_cts      			,
-		output                                 o_uart_rts			,
-	
 
 	    input      [P_UART_DATA_WIDTH-1:0]     i_user_tx_data      ,
 	    input                                  i_user_tx_valid     ,
@@ -93,12 +90,12 @@
 	)
 	u1_Baud_Generator
 	(
-		.clock   	( clock          ) ,
+		.clock 	( clock          ) ,
 		.reset     	( r_uart_rx_clk_rst  ),
 		.o_u_clk   	( w_uart_rx_clk      )
 	);
 
-/*
+
 	Rst_Gen #(
 		.P_RST_CYCLE 	( P_RST_CYCLE  )
 	)
@@ -107,7 +104,7 @@
 		.i_clk 	( w_uart_baudclk      ),
 		.o_rst 	( w_uart_baudclk_rst  )
 	);
-*/
+
 
 	Uart_Receiver #(
 		.P_UART_DATA_WIDTH 	( P_UART_DATA_WIDTH  ),
@@ -117,7 +114,7 @@
 	u0_Uart_Receiver
 	(
 		.i_u_clk           	( w_uart_rx_clk      ),
-		.i_u_rst           	( reset  ),
+		.i_u_rst           	( w_uart_baudclk_rst  ),
 		.i_uart_rx       	( i_uart_rx        ),
 		.o_uart_rx_data  	( w_user_rx_data   ),
 		.o_uart_rx_valid 	( w_user_rx_valid  )
@@ -132,7 +129,7 @@
 	u0_Uart_Transmitter
 	(
 		.i_u_clk           	( w_uart_baudclk            ),
-		.i_u_rst           	( reset            ),
+		.i_u_rst           	( w_uart_baudclk_rst            ),
 		.o_uart_tx       	( o_uart_tx        ),
 		.i_uart_tx_data  	( i_user_tx_data   ),
 		.i_uart_tx_valid 	( i_user_tx_valid  ),
@@ -204,8 +201,8 @@
 
 
 
-	always @(posedge w_uart_baudclk or posedge reset) begin
-		if(reset) begin
+	always @(posedge w_uart_baudclk or posedge w_uart_baudclk_rst) begin
+		if(w_uart_baudclk_rst) begin
 			r_user_rx_data_1 <= 'd0;
 			r_user_rx_data_2 <= 'd0;
 			r_user_rx_valid_1 <= 1'b0;
