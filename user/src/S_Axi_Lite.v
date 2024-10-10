@@ -22,8 +22,7 @@
 
 	module S_Axi_Lite #(
 	    parameter integer P_S_AXI_DATA_WIDTH	= 32,
-	    parameter integer P_S_AXI_ADDR_WIDTH	= 4,
-		parameter		  P_UART_DATA_WIDTH = 8
+	    parameter integer P_S_AXI_ADDR_WIDTH	= 16
 	)
 	(   
 		input   s_axi_aclk,
@@ -69,11 +68,11 @@
 		input   s_axi_rready,
 
 	    input   i_user_rx_valid,
-	    input   [P_UART_DATA_WIDTH-1:0] i_user_rx_data,
+	    input   [7:0] i_user_rx_data,
 
 	    input   i_user_tx_ready,
 	    output  o_user_tx_valid,
-	    output  [P_UART_DATA_WIDTH-1:0] o_user_tx_data,
+	    output  [7:0] o_user_tx_data,
 
 		input		RxD,
 		output  	TxD,
@@ -145,7 +144,7 @@
 	wire axi_reg_wren = r_axi_wready && s_axi_wvalid ;
 	wire axi_reg_rden = r_axi_rvalid && s_axi_rready;
 	assign user_rx_valid_posedge = i_user_rx_valid && (~r_user_rx_valid);
-	assign o_user_tx_data = r_axi_reg1[P_UART_DATA_WIDTH-1:0];
+	assign o_user_tx_data = r_axi_reg1[7:0];
 	assign user_tx_ready_posedge = i_user_tx_ready && (~r_user_tx_ready);
 	assign o_user_tx_valid = ro_user_tx_valid;
 
@@ -310,12 +309,12 @@
 			end
 		end
 	end
-
+	//reg0 is a data recieve reg,is a read only reg
 	always @(posedge s_axi_aclk) begin
 	    if(~s_axi_aresetn)
 	        r_axi_reg0 <= {P_S_AXI_DATA_WIDTH{1'b0}}; 
 	    else if(user_rx_valid_posedge)
-	        r_axi_reg0 <= {{(P_S_AXI_DATA_WIDTH-P_UART_DATA_WIDTH){1'b0}},i_user_rx_data};
+	        r_axi_reg0 <= {{24{1'b0}},i_user_rx_data};
 	    else
 	        r_axi_reg0 <= r_axi_reg0;
 	end
