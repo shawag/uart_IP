@@ -31,7 +31,7 @@
 		// Write address 
 		input  [P_S_AXI_ADDR_WIDTH-1:0] s_axi_awaddr,
 		// Write channel Protection type. 
-		input  [2:0] s_axi_awprot,
+		//input  [2:0] s_axi_awprot,
 		// Write address valid.
 		input   s_axi_awvalid,
 		// Write address ready. 
@@ -39,7 +39,7 @@
 		// Write data.
 		input  [P_S_AXI_DATA_WIDTH-1:0] s_axi_wdata,
 		// Write strobes. This signal indicates which byte lanes hold
-		input  [(P_S_AXI_DATA_WIDTH/8)-1:0] s_axi_wstrb,
+		//input  [(P_S_AXI_DATA_WIDTH/8)-1:0] s_axi_wstrb,
 		// Write valid. This signal indicates that valid write
 		input   s_axi_wvalid,
 		// Write ready. This signal indicates that the slave
@@ -53,7 +53,7 @@
 		// Read address
 		input  [P_S_AXI_ADDR_WIDTH-1:0] s_axi_araddr,
 		// Protection type.
-		input  [2:0] s_axi_arprot,
+		//input  [2:0] s_axi_arprot,
 		// Read address valid.
 		input   s_axi_arvalid,
 		// Read address ready.
