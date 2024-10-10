@@ -6,6 +6,7 @@
      * @FilePath: \uart\user\sim\TB_UART_DRIVE.v
      * @Description: 
      */
+     `timescale 1ns / 1ps
     module Tb_Uart_Driver_Remake();
     
     /****仿真语法、产生时钟与复位****/
@@ -51,18 +52,19 @@
         .i_user_tx_data     (r_user_tx_data         ),
         .i_user_tx_valid    (r_user_tx_valid        ),
         .o_user_tx_ready    (w_user_tx_ready        ),
-        .i_data_bits        (4'd8),
-        .i_stop_bits        (2'd1),
-        .i_check_bits        (2'd0),
+        .i_div_num          (24'd50),
+        .i_data_bit         (4'd8),
+        .i_stop_bit         (2'd1),
+        .i_check_bit        (2'd0),
         .o_user_rx_data     (w_user_rx_data         ),
         .o_user_rx_valid    (w_user_rx_valid        ),
-        .o_user_clk         (w_user_clk             ) ,
-        .o_user_rst         (w_user_rst             )  
+        .o_user_clk         (w_user_clk             ),
+        .o_user_rst         (w_user_rst)
     );
     /****激励信号****/
-    always@(posedge w_user_clk,posedge w_user_rst)
+    always@(posedge w_user_clk,posedge rst)
     begin
-        if(w_user_rst)
+        if(rst)
             r_user_tx_data <= 'd0;
         else if(w_user_active)
             r_user_tx_data <= r_user_tx_data + 1;
@@ -70,9 +72,9 @@
             r_user_tx_data <= r_user_tx_data;
     end
     
-    always@(posedge w_user_clk,posedge w_user_rst)
+    always@(posedge w_user_clk,posedge rst)
     begin
-        if(w_user_rst)
+        if(rst)
             r_user_tx_valid <= 'd0;
         else if(w_user_active)
             r_user_tx_valid <= 'd0;

@@ -42,10 +42,10 @@
 		input		[23:0]						i_div_num,
 		input		[3:0]						i_data_bit,
 		input 		[1:0]						i_stop_bit,
-		input	 	[1:0]						i_check_bit
+		input	 	[1:0]						i_check_bit,
 
-	   // output                                 o_user_clk          ,
-	 //   output                                 o_user_rst
+	    output                                 o_user_clk          ,
+	    output                                 o_user_rst
 	);
 
 	wire                            w_uart_baudclk       ; 
@@ -66,8 +66,8 @@
 	reg								r_user_rx_valid_2;
 
 
-	//assign		o_user_clk = w_uart_baudclk		;
-	//assign		o_user_rst = w_uart_baudclk_rst	;
+	assign		o_user_clk = w_uart_baudclk		;
+	assign		o_user_rst = w_uart_baudclk_rst	;
 	assign		o_user_rx_data = r_user_rx_data_2;
 	assign		o_user_rx_valid = r_user_rx_valid_2;
 

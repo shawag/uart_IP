@@ -33,7 +33,7 @@
     localparam HALF_DIVIDER_FACTOR = $floor((DIVIDER_FACTOR-1)/2)+1;
     localparam CNT_BIT = $clog2(DIVIDER_FACTOR);
     */
-    wire [23:0] div_num_half = i_div_num <<< 1;
+    wire [23:0] div_num_half = i_div_num >>> 1;
     //reg define
     //reg output
     reg               ro_u_clk;

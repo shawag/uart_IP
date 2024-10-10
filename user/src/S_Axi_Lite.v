@@ -73,7 +73,13 @@
 
 	    input   i_user_tx_ready,
 	    output  o_user_tx_valid,
-	    output  [P_UART_DATA_WIDTH-1:0] o_user_tx_data
+	    output  [P_UART_DATA_WIDTH-1:0] o_user_tx_data,
+
+		input		RxD,
+		output  	TxD,
+
+		input		CTS,
+		output  	RTS
 	);
 	//output reg define
 	//AW channel
@@ -92,7 +98,8 @@
 	//R channel
 	reg                          r_axi_rvalid;
 	reg                          r_axi_awready;
-
+	
+	
 
 
 	//output connection
@@ -110,6 +117,11 @@
 	//wire define
 	wire                        user_rx_valid_posedge;
 	wire                        user_tx_ready_posedge;
+
+	wire [23:0]					w_div_num;
+	wire [3:0]					w_data_bit;
+	wire [1:0]					w_stop_bit;
+	wire [1:0]					w_check_bit;
 	//reg define
 	//indicate this is valid to write the write address
 	//reg							 r_aw_valid;
@@ -124,6 +136,12 @@
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg3;
 
 	//logic define
+	//splite setting reg(reg2), use different part to realize the setting of uart
+	assign w_div_num = r_axi_reg2[23:0];
+	assign w_data_bit = r_axi_reg3[31:28];
+	assign w_stop_bit = r_axi_reg3[27:26];
+	assign w_check_bit = r_axi_reg3[25:24];
+
 	wire axi_reg_wren = r_axi_wready && s_axi_wvalid ;
 	wire axi_reg_rden = r_axi_rvalid && s_axi_rready;
 	assign user_rx_valid_posedge = i_user_rx_valid && (~r_user_rx_valid);
@@ -348,5 +366,24 @@
 	            ro_user_tx_valid <= ro_user_tx_valid;
 	    end
 	end
+
+Uart_Driver u_Uart_Driver(
+	.clock           	( s_axi_aclk       ),
+	.reset           	( ~s_axi_aresetn   ),         
+	.i_uart_rx       	( RX        ),
+	.o_uart_tx       	( TX        ),
+	.i_uart_cts      	( CTS       ),
+	.o_uart_rts      	( RTS       ),
+	.i_user_tx_data  	( i_user_tx_data   ),
+	.i_user_tx_valid 	( i_user_tx_valid  ),
+	.o_user_tx_ready 	( o_user_tx_ready  ),
+	.o_user_rx_data  	( o_user_rx_data   ),
+	.o_user_rx_valid 	( o_user_rx_valid  ),
+	.i_div_num       	( w_div_num        ),
+	.i_data_bit      	( w_data_bit       ),
+	.i_stop_bit      	( w_stop_bit       ),
+	.i_check_bit     	( w_check_bit      )
+);
+
 
 	endmodule
