@@ -27,6 +27,7 @@
         input [3:0]                               i_data_bit, 
         input [1:0]                               i_stop_bit ,
         input [1:0]                               i_check_bit,
+        input                                     i_uart_cts,
 
         output                                    o_uart_tx,
 
@@ -45,8 +46,21 @@
     reg   [3:0]                       r_cnt;
     reg   [7:0]                       r_uart_tx_data;
     reg                               r_tx_check;
+
+    reg                               r_uart_cts;
     //indicate transmit process
-    assign w_tx_active = i_uart_tx_valid & o_uart_tx_ready;
+    assign cts_valid = !r_uart_cts & (!i_uart_cts);
+    assign w_tx_active = i_uart_tx_valid & o_uart_tx_ready & cts_valid;
+
+    //reg used to capture cts
+    always @(posedge i_u_clk or posedge i_u_rst) begin
+        if(i_u_rst) begin
+            r_uart_cts <= 1'b1;
+        end
+        else begin
+            r_uart_cts <= i_uart_cts;
+        end
+    end
     //logic for tx ready, active low during tranmission
     always @(posedge i_u_clk or posedge i_u_rst) begin
         if(i_u_rst) begin

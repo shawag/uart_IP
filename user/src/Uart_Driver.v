@@ -29,7 +29,7 @@
 	    output                                 o_uart_tx           ,
 
 		input                                  i_uart_cts      			,
-		output                                 o_uart_rts			,
+
 	
 
 	    input      [7:0]     i_user_tx_data      ,
@@ -123,7 +123,8 @@
 		.o_uart_tx_ready 	( o_user_tx_ready  ),
 		.i_data_bit			( i_data_bit ),
 		.i_stop_bit			( i_stop_bit ),
-		.i_check_bit		( i_check_bit )
+		.i_check_bit		( i_check_bit ),
+		.i_uart_cts			( i_uart_cts )
 	);
 
 

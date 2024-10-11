@@ -21,13 +21,14 @@
 	`timescale 1ns / 1ps
 
 	module S_Axi_Lite #(
-	    parameter integer P_S_AXI_DATA_WIDTH	= 32,
-	    parameter integer P_S_AXI_ADDR_WIDTH	= 16
+	    parameter  P_S_AXI_DATA_WIDTH	= 32,
+	    parameter  P_S_AXI_ADDR_WIDTH	= 16,
+		parameter  P_FIFO_DEPTH	= 512
 	)
 	(   
-		input   s_axi_aclk,
+		input   clock,
 		// Global Reset Signal. This Signal is Active LOW
-		input   s_axi_aresetn,
+		input   reset,
 		// Write address 
 		input  [P_S_AXI_ADDR_WIDTH-1:0] s_axi_awaddr,
 		// Write channel Protection type. 
@@ -114,20 +115,35 @@
 	assign s_axi_rvalid = r_axi_rvalid;
 	assign s_axi_awready = r_axi_awready;
 	//wire define
+	wire						tx_fifo_rvalid;
 	wire                        user_rx_valid_posedge;
 	wire                        user_tx_ready_posedge;
+	wire						tx_fifo_wen;
+	
+	wire                        tx_fifo_empty;
+	wire						tx_fifo_full;
+
+	wire 						rx_fifo_wen;
+	wire						rx_fifo_ren;
+
+	wire 						rx_fifo_empty;
+	wire 						rx_fifo_full;
 
 	wire [23:0]					w_div_num;
 	wire [3:0]					w_data_bit;
 	wire [1:0]					w_stop_bit;
 	wire [1:0]					w_check_bit;
+
+	wire [7:0]					w_user_tx_data;
+	wire [7:0]					w_user_rx_data;
 	//reg define
 	//indicate this is valid to write the write address
 	//reg							 r_aw_valid;
+
 	reg                         r_user_rx_valid;
 	reg                         r_user_tx_ready;
 	reg                         ro_user_tx_valid;
-
+	reg						    tx_fifo_ren;
 	//slave reg define
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg0;
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg1;
@@ -141,21 +157,25 @@
 	assign w_stop_bit = r_axi_reg3[27:26];
 	assign w_check_bit = r_axi_reg3[25:24];
 
-	wire axi_reg_wren = r_axi_wready && s_axi_wvalid ;
-	wire axi_reg_rden = r_axi_rvalid && s_axi_rready;
-	assign user_rx_valid_posedge = i_user_rx_valid && (~r_user_rx_valid);
+	wire axi_reg_wren = r_axi_wready & s_axi_wvalid ;
+	wire axi_reg_rden = r_axi_rvalid & s_axi_rready;
+	assign user_rx_valid_posedge = i_user_rx_valid & (~r_user_rx_valid);
 	assign o_user_tx_data = r_axi_reg1[7:0];
-	assign user_tx_ready_posedge = i_user_tx_ready && (~r_user_tx_ready);
+	assign user_tx_ready_posedge = i_user_tx_ready & (~r_user_tx_ready);
 	assign o_user_tx_valid = ro_user_tx_valid;
 
+	assign tx_fifo_wen = r_axi_bvalid & s_axi_bready & (~tx_fifo_full);
+	assign rx_fifo_wen = user_rx_valid_posedge & (~rx_fifo_full);
 
+	assign RTS = rx_fifo_full;
+	//assign tx_fifo_ren = i_user_tx_ready & (~tx_fifo_empty);
 	//logic
 	
 
 
 	//awready signal generator 
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
+	always @(posedge clock) begin
+	    if(~reset)
 	        r_axi_awready <= 1'b0;   
 	    else begin
 	        if(~r_axi_awready && s_axi_awvalid )
@@ -167,8 +187,8 @@
 	    end
 	end
 	//logic for awaddr
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
+	always @(posedge clock) begin
+	    if(~reset)
 	        r_axi_awaddr <= {P_S_AXI_ADDR_WIDTH{1'b0}};
 	    else begin
 	        if(r_axi_awready && s_axi_awvalid )
@@ -179,8 +199,8 @@
 	end
 	/*
 	//aw_valid signal generator
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 			r_aw_valid <= 1'b1;
 		else begin
 			if(~r_axi_awready && s_axi_awvalid  && r_aw_valid)
@@ -194,8 +214,8 @@
 	end
 	*/
 	//wready signal generator
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
+	always @(posedge clock) begin
+	    if(~reset)
 	        r_axi_wready <= 1'b0;
 	    else begin
 	       if(~r_axi_wready  && s_axi_wvalid )
@@ -205,8 +225,8 @@
 	    end
 	end
 	//bvalid signal generator
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
+	always @(posedge clock) begin
+	    if(~reset)
 	        r_axi_bvalid <= 1'b0;
 	    else begin
 	        if( ~r_axi_bvalid && r_axi_wready && s_axi_wvalid)
@@ -218,8 +238,8 @@
 	    end
 	end
 	//bresp signal generator
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 			r_axi_bresp <= 2'b00;
 		else begin
 			//this bresp indicates the transmission error is error when tx is transmitting data
@@ -234,8 +254,8 @@
 		end
 	end
 	//arready signal generator
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 		 	r_axi_arready <= 1'b0;
 		else begin
 			if(~r_axi_arready && s_axi_arvalid)
@@ -245,8 +265,8 @@
 		end
 	end
 	//logic for araddr
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 			r_axi_araddr <= {P_S_AXI_ADDR_WIDTH{1'b0}};
 		else begin
 			if(~r_axi_arready && s_axi_arvalid)
@@ -256,8 +276,8 @@
 		end
 	end
 	//rvalid signal generator
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 			r_axi_rvalid <= 1'b0;
 		else begin
 			if(~r_axi_rvalid &&  s_axi_arvalid)
@@ -269,8 +289,8 @@
 		end
 	end
 	//rresp signal generator
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 			r_axi_rresp <= 2'b00;
 		else begin
 			if(~r_axi_rvalid && r_axi_arready )
@@ -280,8 +300,8 @@
 		end
 	end
 	//write reg process
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn) begin
+	always @(posedge clock) begin
+		if(~reset) begin
 			r_axi_reg1 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 			r_axi_reg2 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 			r_axi_reg3 <= {P_S_AXI_DATA_WIDTH{1'b0}};
@@ -310,8 +330,8 @@
 		end
 	end
 	//reg0 is a data recieve reg,is a read only reg
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
+	always @(posedge clock) begin
+	    if(~reset)
 	        r_axi_reg0 <= {P_S_AXI_DATA_WIDTH{1'b0}}; 
 	    else if(user_rx_valid_posedge)
 	        r_axi_reg0 <= {{24{1'b0}},i_user_rx_data};
@@ -321,8 +341,8 @@
 
 
 	//read reg process
-	always @(posedge s_axi_aclk) begin
-		if(~s_axi_aresetn)
+	always @(posedge clock) begin
+		if(~reset)
 			r_axi_rdata <= {P_S_AXI_DATA_WIDTH{1'b0}};
 		else begin
 			if(axi_reg_rden && r_axi_awaddr[P_S_AXI_ADDR_WIDTH-1:4]==0)
@@ -338,26 +358,26 @@
 		end
 	end
 
-
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
-	        r_user_rx_valid <= 1'b0;
+	//FF for user_rx_valid, aim to edge detect
+	always @(posedge clock) begin
+	    if(~reset)
+	        r_user_rx_valid <= 1'b1;
 	    else
 	        r_user_rx_valid <= i_user_rx_valid;
 	end
-
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
-	        r_user_tx_ready <= 1'b0;
+	//FF for user_tx_ready, aim to edge detect
+	always @(posedge clock) begin
+	    if(~reset)
+	        r_user_tx_ready <= 1'b1;
 	    else
 	        r_user_tx_ready <= i_user_tx_ready;
 	end
 
-	always @(posedge s_axi_aclk) begin
-	    if(~s_axi_aresetn)
+	always @(posedge clock) begin
+	    if(~reset)
 	        ro_user_tx_valid <= 1'b0;
 	    else begin
-	        if(r_axi_awaddr[3:0]==4'h04 && r_axi_rvalid && s_axi_rready)
+	        if(~tx_fifo_empty && tx_fifo_rvalid)
 	            ro_user_tx_valid <= 1'b1;
 	        else if(user_tx_ready_posedge)
 	            ro_user_tx_valid <= 1'b0;
@@ -366,23 +386,100 @@
 	    end
 	end
 
-Uart_Driver u_Uart_Driver(
-	.clock           	( s_axi_aclk       ),
-	.reset           	( ~s_axi_aresetn   ),         
-	.i_uart_rx       	( RX        ),
-	.o_uart_tx       	( TX        ),
-	.i_uart_cts      	( CTS       ),
-	.o_uart_rts      	( RTS       ),
-	.i_user_tx_data  	( i_user_tx_data   ),
-	.i_user_tx_valid 	( i_user_tx_valid  ),
-	.o_user_tx_ready 	( o_user_tx_ready  ),
-	.o_user_rx_data  	( o_user_rx_data   ),
-	.o_user_rx_valid 	( o_user_rx_valid  ),
-	.i_div_num       	( w_div_num        ),
-	.i_data_bit      	( w_data_bit       ),
-	.i_stop_bit      	( w_stop_bit       ),
-	.i_check_bit     	( w_check_bit      )
-);
+	always @(posedge clock) begin
+		if(~reset)
+			tx_fifo_ren <=  1'b0;
+		else if(tx_fifo_rvalid)
+			tx_fifo_ren <= 1'b0;
+		else if(i_user_tx_ready & (~tx_fifo_empty))
+			tx_fifo_ren <= 1'b1;
+		else
+			tx_fifo_ren <= tx_fifo_ren;
+	end
+
+	Uart_Driver u_Uart_Driver(
+		.clock           	( clock       ),
+		.reset           	( ~reset   ),         
+		.i_uart_rx       	( RX        ),
+		.o_uart_tx       	( TX        ),
+		.i_uart_cts      	( CTS       ),
+		.i_user_tx_data  	( w_user_tx_data   ),
+		.i_user_tx_valid 	( i_user_tx_valid  ),
+		.o_user_tx_ready 	( o_user_tx_ready  ),
+		.o_user_rx_data  	( w_user_rx_data   ),
+		.o_user_rx_valid 	( o_user_rx_valid  ),
+		.i_div_num       	( w_div_num        ),
+		.i_data_bit      	( w_data_bit       ),
+		.i_stop_bit      	( w_stop_bit       ),
+		.i_check_bit     	( w_check_bit      )
+	);
+	//TX FIFO
+	sync_fifo #(
+		.INPUT_WIDTH       	( 8       ),
+		.OUTPUT_WIDTH      	( 8        ),
+		.WR_DEPTH          	( P_FIFO_DEPTH ),
+		.RD_DEPTH          	( P_FIFO_DEPTH ),
+		.MODE              	( "Standard"),
+		.DIRECTION         	( "MSB"     ),
+		.ECC_MODE          	( "no_ecc"  ),
+		.PROG_EMPTY_THRESH 	( 0        ),
+		.PROG_FULL_THRESH  	( 0        ),
+		.USE_ADV_FEATURES  	( 16'h0000  ))
+	u0_sync_fifo(
+		.clock         	( clock                ),
+		.reset         	( reset                ),
+		.wr_en         	( tx_fifo_wen ),
+		.wr_ready      	( r_axi_reg3[0]        ),
+		.din           	( r_axi_reg1[7:0]      ),
+		.rd_en         	( tx_fifo_ren),
+		.valid         	( tx_fifo_rvalid       ),
+		.dout          	( w_user_tx_data       ),
+		.full          	( tx_fifo_full         ),
+		.empty         	( tx_fifo_empty        ),
+		.almost_full   	(     ),
+		.almost_empty  	(    ),
+		.prog_full     	(       ),
+		.prog_empty    	(      ),
+		.overflow      	(        ),
+		.underflow     	(       ),
+		.wr_ack        	(          ),
+		.sbiterr       	(         ),
+		.dbiterr       	(         )
+	);
+	//RX FIFO
+	sync_fifo #(
+		.INPUT_WIDTH       	( 8       ),
+		.OUTPUT_WIDTH      	( 8        ),
+		.WR_DEPTH          	( P_FIFO_DEPTH ),
+		.RD_DEPTH          	( P_FIFO_DEPTH ),
+		.MODE              	( "Standard"),
+		.DIRECTION         	( "MSB"     ),
+		.ECC_MODE          	( "no_ecc"  ),
+		.PROG_EMPTY_THRESH 	( 0        ),
+		.PROG_FULL_THRESH  	( 0        ),
+		.USE_ADV_FEATURES  	( 16'h0000  ))
+	u1_sync_fifo(
+		.clock         	( clock          ),
+		.reset         	( reset          ),
+		.wr_en         	( rx_fifo_wen    ),
+		.wr_ready      	( r_axi_reg3[1]  ),
+		.din           	( w_user_rx_data ),
+		.rd_en         	( rx_fifo_ren    ),
+		.valid         	( valid          ),
+		.dout          	( r_axi_reg0[7:0]),
+		.full          	( rx_fifo_full   ),
+		.empty         	( rx_fifo_empty  ),
+		.almost_full   	(     ),
+		.almost_empty  	(    ),
+		.prog_full     	(       ),
+		.prog_empty    	(      ),
+		.overflow      	(        ),
+		.underflow     	(       ),
+		.wr_ack        	(          ),
+		.sbiterr       	(         ),
+		.dbiterr       	(         )
+	);
+
 
 
 	endmodule
