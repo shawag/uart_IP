@@ -19,6 +19,7 @@ module axilite_uart_tb();
     wire            s_axi_rvalid    ;
     reg             s_axi_rready    ;
     wire            interrupt       ;
+    wire            RTS;
 
     // inner logic
     // 10ns --> Freq = 100MHz
@@ -31,16 +32,12 @@ module axilite_uart_tb();
 
     Axi_Lite_Uart  #(
         .P_S_AXI_DATA_WIDTH 	( 32        )  ,
-	    .P_S_AXI_ADDR_WIDTH 	( 16        )  ,
-        .P_SYSTEM_CLK           (100_000_000)  ,
-        .P_UART_BUADRATE        (1152000    )  ,
-        .P_UART_DATA_WIDTH      (8          )  ,
-        .P_UART_STOP_WIDTH      (1          )  ,
-        .P_UART_CHECK           (0          )  ,
-        .P_RST_CYCLE            (10         )
-    ) dut (
-        .s_axi_aclk          (clock)         , 
-        .s_axi_aresetn   (async_resetn)  ,
+	    .P_S_AXI_ADDR_WIDTH 	( 16        )  
+    )
+    Axi_Lite_Uart_u0
+    (
+        .clock          (clock)         , 
+        .reset   (async_resetn)  ,
 
         .s_axi_awaddr   (s_axi_awaddr)  ,
         .s_axi_awvalid  (s_axi_awvalid) ,
@@ -64,10 +61,10 @@ module axilite_uart_tb();
         .s_axi_rready   (s_axi_rready)  , 
 
        // .interrupt      (interrupt)     ,
-        .rx            (TxD_RxD)           ,
-        .tx            (TxD_RxD)           
-        // .RTSn           ()              ,
-       // .CTSn           (1'b0)             
+        .RxD            (TxD_RxD)           ,
+        .TxD            (TxD_RxD)           ,
+        .RTS           (RTS)              ,
+        .CTS           (1'b0)             
     );
 
 

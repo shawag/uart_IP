@@ -20,7 +20,7 @@
 
 	`timescale 1ns / 1ps
 
-	module S_Axi_Lite #(
+	module Axi_Lite_Uart #(
 	    parameter  P_S_AXI_DATA_WIDTH	= 32,
 	    parameter  P_S_AXI_ADDR_WIDTH	= 16,
 		parameter  P_FIFO_DEPTH	= 512
@@ -145,7 +145,7 @@
 	reg                         ro_user_tx_valid;
 	reg						    tx_fifo_ren;
 	//slave reg define
-	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg0;
+	wire [P_S_AXI_DATA_WIDTH-1:0] w_axi_reg0;
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg1;
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg2;
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg3;
@@ -168,6 +168,8 @@
 	assign rx_fifo_wen = user_rx_valid_posedge & (~rx_fifo_full);
 
 	assign RTS = rx_fifo_full;
+
+	assign rx_fifo_ren = r_axi_arready && s_axi_arvalid;
 	//assign tx_fifo_ren = i_user_tx_ready & (~tx_fifo_empty);
 	//logic
 	
@@ -303,7 +305,8 @@
 	always @(posedge clock) begin
 		if(~reset) begin
 			r_axi_reg1 <= {P_S_AXI_DATA_WIDTH{1'b0}};
-			r_axi_reg2 <= {P_S_AXI_DATA_WIDTH{1'b0}};
+			r_axi_reg2 <= {4'd8,2'd1,2'd0,24'd50};
+		//	r_axi_reg2 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 			r_axi_reg3 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 		end
 		else begin
@@ -330,6 +333,7 @@
 		end
 	end
 	//reg0 is a data recieve reg,is a read only reg
+	/*
 	always @(posedge clock) begin
 	    if(~reset)
 	        r_axi_reg0 <= {P_S_AXI_DATA_WIDTH{1'b0}}; 
@@ -338,7 +342,7 @@
 	    else
 	        r_axi_reg0 <= r_axi_reg0;
 	end
-
+*/
 
 	//read reg process
 	always @(posedge clock) begin
@@ -347,11 +351,11 @@
 		else begin
 			if(axi_reg_rden && r_axi_awaddr[P_S_AXI_ADDR_WIDTH-1:4]==0)
 				case(r_axi_araddr[3:0])
-				4'h00: r_axi_rdata = r_axi_reg0;
-				4'h04: r_axi_rdata = r_axi_reg1;
-				4'h08: r_axi_rdata = r_axi_reg2;
-				4'h0c: r_axi_rdata = r_axi_reg3;
-				default: r_axi_rdata = {P_S_AXI_DATA_WIDTH{1'b0}};
+				4'h00: r_axi_rdata <= w_axi_reg0;
+				4'h04: r_axi_rdata <= r_axi_reg1;
+				4'h08: r_axi_rdata <= r_axi_reg2;
+				4'h0c: r_axi_rdata <= r_axi_reg3;
+				default: r_axi_rdata <= {P_S_AXI_DATA_WIDTH{1'b0}};
 				endcase
 			else
 				r_axi_rdata <= r_axi_rdata;
@@ -429,7 +433,7 @@
 		.clock         	( clock                ),
 		.reset         	( reset                ),
 		.wr_en         	( tx_fifo_wen ),
-		.wr_ready      	( r_axi_reg3[0]        ),
+		.wr_ready      	(         ),
 		.din           	( r_axi_reg1[7:0]      ),
 		.rd_en         	( tx_fifo_ren),
 		.valid         	( tx_fifo_rvalid       ),
@@ -462,11 +466,11 @@
 		.clock         	( clock          ),
 		.reset         	( reset          ),
 		.wr_en         	( rx_fifo_wen    ),
-		.wr_ready      	( r_axi_reg3[1]  ),
+		.wr_ready      	(   ),
 		.din           	( w_user_rx_data ),
 		.rd_en         	( rx_fifo_ren    ),
 		.valid         	( valid          ),
-		.dout          	( r_axi_reg0[7:0]),
+		.dout          	( w_axi_reg0[7:0]),
 		.full          	( rx_fifo_full   ),
 		.empty         	( rx_fifo_empty  ),
 		.almost_full   	(     ),
