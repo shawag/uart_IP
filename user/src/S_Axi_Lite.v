@@ -23,7 +23,7 @@
 	module Axi_Lite_Uart #(
 	    parameter  P_S_AXI_DATA_WIDTH	= 32,
 	    parameter  P_S_AXI_ADDR_WIDTH	= 16,
-		parameter  P_FIFO_DEPTH	= 512
+		parameter  P_FIFO_DEPTH	= 8
 	)
 	(   
 		input   clock,
@@ -144,6 +144,8 @@
 	reg                         r_user_tx_ready;
 	reg                         ro_user_tx_valid;
 	reg						    tx_fifo_ren;
+
+	reg  					r_tx_fifo_empty_1d;
 	//slave reg define
 	wire [P_S_AXI_DATA_WIDTH-1:0] w_axi_reg0;
 	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg1;
@@ -153,9 +155,9 @@
 	//logic define
 	//splite setting reg(reg2), use different part to realize the setting of uart
 	assign w_div_num = r_axi_reg2[23:0];
-	assign w_data_bit = r_axi_reg3[31:28];
-	assign w_stop_bit = r_axi_reg3[27:26];
-	assign w_check_bit = r_axi_reg3[25:24];
+	assign w_data_bit = r_axi_reg2[31:28];
+	assign w_stop_bit = r_axi_reg2[27:26];
+	assign w_check_bit = r_axi_reg2[25:24];
 
 	wire axi_reg_wren = r_axi_wready & s_axi_wvalid ;
 	wire axi_reg_rden = r_axi_rvalid & s_axi_rready;
@@ -381,13 +383,20 @@
 	    if(~reset)
 	        ro_user_tx_valid <= 1'b0;
 	    else begin
-	        if(~tx_fifo_empty && tx_fifo_rvalid)
+	        if(~r_tx_fifo_empty_1d && tx_fifo_rvalid)
 	            ro_user_tx_valid <= 1'b1;
 	        else if(user_tx_ready_posedge)
 	            ro_user_tx_valid <= 1'b0;
 	        else
 	            ro_user_tx_valid <= ro_user_tx_valid;
 	    end
+	end
+
+	always @(posedge clock) begin
+		if(~reset)
+			r_tx_fifo_empty_1d <= 1'b1;
+		else
+			r_tx_fifo_empty_1d <= tx_fifo_empty;
 	end
 
 	always @(posedge clock) begin
@@ -404,14 +413,14 @@
 	Uart_Driver u_Uart_Driver(
 		.clock           	( clock       ),
 		.reset           	( ~reset   ),         
-		.i_uart_rx       	( RX        ),
-		.o_uart_tx       	( TX        ),
+		.i_uart_rx       	( RxD        ),
+		.o_uart_tx       	( TxD        ),
 		.i_uart_cts      	( CTS       ),
 		.i_user_tx_data  	( w_user_tx_data   ),
-		.i_user_tx_valid 	( i_user_tx_valid  ),
-		.o_user_tx_ready 	( o_user_tx_ready  ),
+		.i_user_tx_valid 	( ro_user_tx_valid  ),
+		.o_user_tx_ready 	( i_user_tx_ready  ),
 		.o_user_rx_data  	( w_user_rx_data   ),
-		.o_user_rx_valid 	( o_user_rx_valid  ),
+		.o_user_rx_valid 	( i_user_rx_valid  ),
 		.i_div_num       	( w_div_num        ),
 		.i_data_bit      	( w_data_bit       ),
 		.i_stop_bit      	( w_stop_bit       ),
