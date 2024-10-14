@@ -128,6 +128,7 @@
 
 	wire 						rx_fifo_empty;
 	wire 						rx_fifo_full;
+	wire [7:0]					rx_fifo_rdata;
 
 	wire [23:0]					w_div_num;
 	wire [3:0]					w_data_bit;
@@ -158,6 +159,8 @@
 	assign w_data_bit = r_axi_reg2[31:28];
 	assign w_stop_bit = r_axi_reg2[27:26];
 	assign w_check_bit = r_axi_reg2[25:24];
+
+	assign w_axi_reg0 = {{24{1'b0}},rx_fifo_rdata}; 
 
 	wire axi_reg_wren = r_axi_wready & s_axi_wvalid ;
 	wire axi_reg_rden = r_axi_rvalid & s_axi_rready;
@@ -479,7 +482,7 @@
 		.din           	( w_user_rx_data ),
 		.rd_en         	( rx_fifo_ren    ),
 		.valid         	( valid          ),
-		.dout          	( w_axi_reg0[7:0]),
+		.dout          	( rx_fifo_rdata),
 		.full          	( rx_fifo_full   ),
 		.empty         	( rx_fifo_empty  ),
 		.almost_full   	(     ),
