@@ -67,13 +67,8 @@
 		output   s_axi_rvalid,
 		// Read ready.
 		input   s_axi_rready,
+		
 
-	    input   i_user_rx_valid,
-	    input   [7:0] i_user_rx_data,
-
-	    input   i_user_tx_ready,
-	    output  o_user_tx_valid,
-	    output  [7:0] o_user_tx_data,
 
 		input		RxD,
 		output  	TxD,
@@ -115,6 +110,9 @@
 	assign s_axi_rvalid = r_axi_rvalid;
 	assign s_axi_awready = r_axi_awready;
 	//wire define
+
+	wire 						i_user_rx_valid;
+	wire						i_user_tx_ready;	
 	wire						tx_fifo_rvalid;
 	wire                        user_rx_valid_posedge;
 	wire                        user_tx_ready_posedge;
@@ -145,6 +143,7 @@
 	reg                         r_user_tx_ready;
 	reg                         ro_user_tx_valid;
 	reg						    tx_fifo_ren;
+	reg                         tx_fifo_ren_lock;
 
 	reg  					r_tx_fifo_empty_1d;
 	//slave reg define
@@ -250,7 +249,7 @@
 			r_axi_bresp <= 2'b00;
 		else begin
 			//this bresp indicates the transmission error is error when tx is transmitting data
-			if(~r_axi_bvalid && r_axi_wready && s_axi_wvalid && ~i_user_tx_ready)
+			if(~r_axi_bvalid && r_axi_wready && s_axi_wvalid && tx_fifo_full)
 				r_axi_bresp <= 2'b10;
 			else if(r_axi_awready && ~r_axi_bvalid && r_axi_wready && s_axi_wvalid)
 				r_axi_bresp <= 2'b00;
@@ -402,15 +401,27 @@
 			r_tx_fifo_empty_1d <= tx_fifo_empty;
 	end
 
+				
 	always @(posedge clock) begin
 		if(~reset)
 			tx_fifo_ren <=  1'b0;
-		else if(tx_fifo_rvalid)
+		else if(tx_fifo_ren)
 			tx_fifo_ren <= 1'b0;
-		else if(i_user_tx_ready & (~tx_fifo_empty))
+		else if(i_user_tx_ready && (~tx_fifo_empty) && (~tx_fifo_ren_lock))
 			tx_fifo_ren <= 1'b1;
 		else
 			tx_fifo_ren <= tx_fifo_ren;
+	end
+
+	always @(posedge clock) begin
+		if(~reset)
+			tx_fifo_ren_lock <= 1'b0;
+		else if(tx_fifo_ren)
+			tx_fifo_ren_lock <= 1'b1;
+		else if(user_tx_ready_posedge)
+			tx_fifo_ren_lock <= 1'b0;
+		else
+			tx_fifo_ren_lock <= tx_fifo_ren_lock;
 	end
 
 	Uart_Driver u_Uart_Driver(

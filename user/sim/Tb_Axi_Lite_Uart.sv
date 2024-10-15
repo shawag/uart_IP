@@ -38,7 +38,7 @@ module Tb_AxizLite_Uart();
     task clock_gen;
     begin
         clock = 1;
-        $display("%t:clock is activated, period is %d ns", $time,CLOCK_PERIOD);
+        $display("%t:clock is activated, period is %0d ns", $time,CLOCK_PERIOD);
         forever # (CLOCK_PERIOD/2)
             clock = ~clock;
     end
@@ -51,7 +51,7 @@ module Tb_AxizLite_Uart();
         $display("%t:reset low is activated", $time);
         #(reset_time)
         reset = 1'b1;
-        $display("%t:reset low is end, take %d ns to finish", $time, reset_time);
+        $display("%t:reset low is end, take %0d ns to finish", $time, reset_time);
     end
     endtask
 
@@ -108,8 +108,9 @@ module Tb_AxizLite_Uart();
         s_axi_rready = 1'b1;
         wait(s_axi_rvalid==1'b1);
         @(posedge clock)
-        rd_data = s_axi_rdata;
+        s_axi_rready = 1'b0;
         @(posedge clock)
+        rd_data = s_axi_rdata;
         $display("%t:read data %h from address %h", $time, rd_data, axi_read_addr);
     end
     endtask
@@ -134,6 +135,23 @@ module Tb_AxizLite_Uart();
         axi_lite_write_process(16'h0004, 32'h00000008);
         #(10000*CLOCK_PERIOD)
         axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+
+        axi_lite_write_process(16'h0004, 32'h00000009);
+        axi_lite_write_process(16'h0004, 32'h0000000a);
+        axi_lite_write_process(16'h0004, 32'h0000000b);
+
+         #(10000*CLOCK_PERIOD)
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+        axi_lite_read_process(16'h0000);
+
     end
     
 
