@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module Tb_AxizLite_Uart();
+module Tb_Axi_Lite_Uart();
     reg             clock           ;
     reg             reset    ;
     reg     [15:0]  s_axi_awaddr    ;
@@ -23,9 +23,6 @@ module Tb_AxizLite_Uart();
     reg             CTS;
 
      // inner logic
-     
-    logic           start_write;
-    logic           start_read;
     logic   [31:0]  rd_data;
     wire            TxD_RxD;
 
@@ -125,6 +122,8 @@ module Tb_AxizLite_Uart();
         sys_value_init;
         rst_gen(10*CLOCK_PERIOD);
         #(5*CLOCK_PERIOD)
+        axi_lite_write_process(16'h0008, {4'd8,2'd1,2'd0,24'd50});
+        #(10*CLOCK_PERIOD)
         axi_lite_write_process(16'h0004, 32'h00000001);
         axi_lite_write_process(16'h0004, 32'h00000002);
         axi_lite_write_process(16'h0004, 32'h00000003);
