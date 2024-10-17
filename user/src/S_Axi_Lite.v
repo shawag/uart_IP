@@ -69,10 +69,10 @@
 		input   s_axi_rready,
 		
 
-
+		//rx, tx pad for uart
 		input		RxD,
 		output  	TxD,
-
+		//flow control machnism of uart
 		input		CTS,
 		output  	RTS
 	);
@@ -98,61 +98,56 @@
 
 
 	//output connection
-	//assign s_axi_awaddr = r_axi_awaddr;
-	//assign s_axi_awvalid = r_axi_awvalid;
 	assign s_axi_wready = r_axi_wready;
 	assign s_axi_bresp = r_axi_bresp;
 	assign s_axi_bvalid = r_axi_bvalid;
-	//assign s_axi_araddr = r_axi_araddr;
 	assign s_axi_arready = r_axi_arready;
 	assign s_axi_rdata = r_axi_rdata;
 	assign s_axi_rresp = r_axi_rresp;
 	assign s_axi_rvalid = r_axi_rvalid;
 	assign s_axi_awready = r_axi_awready;
 	//wire define
-
+	//wire related uart
 	wire 						i_user_rx_valid;
-	wire						i_user_tx_ready;	
-	wire						tx_fifo_rvalid;
+	wire						i_user_tx_ready;
 	wire                        user_rx_valid_posedge;
 	wire                        user_tx_ready_posedge;
-	wire						tx_fifo_wen;
-	
-	wire                        tx_fifo_empty;
-	wire						tx_fifo_full;
-
-	wire 						rx_fifo_wen;
-	wire						rx_fifo_ren;
-
-	wire 						rx_fifo_empty;
-	wire 						rx_fifo_full;
-	wire [7:0]					rx_fifo_rdata;
-
+	wire [7:0]					w_user_tx_data;
+	wire [7:0]					w_user_rx_data;
 	wire [23:0]					w_div_num;
 	wire [3:0]					w_data_bit;
 	wire [1:0]					w_stop_bit;
 	wire [1:0]					w_check_bit;
-
-	wire [7:0]					w_user_tx_data;
-	wire [7:0]					w_user_rx_data;
+	//wire related tx fifo
+	wire						tx_fifo_rvalid;
+	wire						tx_fifo_wen;
+	wire                        tx_fifo_empty;
+	wire						tx_fifo_full;
+	//wire related rx fifo
+	wire 						rx_fifo_wen;
+	wire						rx_fifo_ren;
+	wire 						rx_fifo_empty;
+	wire 						rx_fifo_full;
+	wire [7:0]					rx_fifo_rdata;
+	//reg R/W define
+	wire 						axi_reg_wren;
+	wire 						axi_reg_rden;
 	//reg define
-	//indicate this is valid to write the write address
-	//reg							 r_aw_valid;
-
 	reg                         r_user_rx_valid;
 	reg                         r_user_tx_ready;
-	reg                         ro_user_tx_valid;
+	reg                         r_user_tx_valid;
+
 	reg						    tx_fifo_ren;
 	reg                         tx_fifo_ren_lock;
+	reg  					    tx_fifo_empty_1d;
 
-	reg  					r_tx_fifo_empty_1d;
 	//slave reg define
 	wire [P_S_AXI_DATA_WIDTH-1:0] w_axi_reg0;
-	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg1;
-	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg2;
-	reg [P_S_AXI_DATA_WIDTH-1:0] r_axi_reg3;
+	reg [P_S_AXI_DATA_WIDTH-1:0]  r_axi_reg1;
+	reg [P_S_AXI_DATA_WIDTH-1:0]  r_axi_reg2;
+	reg [P_S_AXI_DATA_WIDTH-1:0]  r_axi_reg3;
 
-	//logic define
+	//use assign for simple logic & condition
 	//splite setting reg(reg2), use different part to realize the setting of uart
 	assign w_div_num = r_axi_reg2[23:0];
 	assign w_data_bit = r_axi_reg2[31:28];
@@ -161,22 +156,17 @@
 
 	assign w_axi_reg0 = {{24{1'b0}},rx_fifo_rdata}; 
 
-	wire axi_reg_wren = r_axi_wready & s_axi_wvalid ;
-	wire axi_reg_rden = r_axi_rvalid & s_axi_rready;
-	assign user_rx_valid_posedge = i_user_rx_valid & (~r_user_rx_valid);
-	assign o_user_tx_data = r_axi_reg1[7:0];
-	assign user_tx_ready_posedge = i_user_tx_ready & (~r_user_tx_ready);
-	assign o_user_tx_valid = ro_user_tx_valid;
+	assign axi_reg_wren = r_axi_wready & s_axi_wvalid;
+	assign axi_reg_rden = r_axi_rvalid & s_axi_rready;
 
-	assign tx_fifo_wen = r_axi_bvalid & s_axi_bready & (~tx_fifo_full);
+	assign user_rx_valid_posedge = i_user_rx_valid & (~r_user_rx_valid);
+	assign user_tx_ready_posedge = i_user_tx_ready & (~r_user_tx_ready);
+
+	assign tx_fifo_wen = r_axi_bvalid & s_axi_bready & (~tx_fifo_full) & (s_axi_awaddr[3:0]==4'h04);
 	assign rx_fifo_wen = user_rx_valid_posedge & (~rx_fifo_full);
+	assign rx_fifo_ren = r_axi_arready & s_axi_arvalid;
 
 	assign RTS = rx_fifo_full;
-
-	assign rx_fifo_ren = r_axi_arready && s_axi_arvalid;
-	//assign tx_fifo_ren = i_user_tx_ready & (~tx_fifo_empty);
-	//logic
-	
 
 
 	//awready signal generator 
@@ -203,22 +193,6 @@
 	            r_axi_awaddr <= r_axi_awaddr;
 	    end
 	end
-	/*
-	//aw_valid signal generator
-	always @(posedge clock) begin
-		if(~reset)
-			r_aw_valid <= 1'b1;
-		else begin
-			if(~r_axi_awready && s_axi_awvalid  && r_aw_valid)
-				r_aw_valid <= 1'b0;
-			else if(r_axi_bvalid && s_axi_bready)
-				r_aw_valid <= 1'b1;
-			else
-				r_aw_valid <= r_aw_valid;
-		end
-
-	end
-	*/
 	//wready signal generator
 	always @(posedge clock) begin
 	    if(~reset)
@@ -248,7 +222,7 @@
 		if(~reset)
 			r_axi_bresp <= 2'b00;
 		else begin
-			//this bresp indicates the transmission error is error when tx is transmitting data
+			//this bresp indicates the transmission error when tx fifo is full
 			if(~r_axi_bvalid && r_axi_wready && s_axi_wvalid && tx_fifo_full)
 				r_axi_bresp <= 2'b10;
 			else if(r_axi_awready && ~r_axi_bvalid && r_axi_wready && s_axi_wvalid)
@@ -309,8 +283,7 @@
 	always @(posedge clock) begin
 		if(~reset) begin
 			r_axi_reg1 <= {P_S_AXI_DATA_WIDTH{1'b0}};
-			r_axi_reg2 <= {4'd8,2'd1,2'd0,24'd50};
-		//	r_axi_reg2 <= {P_S_AXI_DATA_WIDTH{1'b0}};
+			r_axi_reg2 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 			r_axi_reg3 <= {P_S_AXI_DATA_WIDTH{1'b0}};
 		end
 		else begin
@@ -319,12 +292,10 @@
 					4'h04: r_axi_reg1 <= s_axi_wdata;
 					4'h08: r_axi_reg2 <= s_axi_wdata;
 					4'h0c: r_axi_reg3 <= s_axi_wdata;
-					//2'b11: r_axi_reg3 <= s_axi_wdata;
 					default: begin
 						r_axi_reg1 <= r_axi_reg1;
 						r_axi_reg2 <= r_axi_reg2;
 						r_axi_reg3 <= r_axi_reg3;
-						//r_axi_reg3 <= r_axi_reg3;
 					end
 				endcase
 			end
@@ -332,22 +303,9 @@
 				r_axi_reg1 <= r_axi_reg1;
 				r_axi_reg2 <= r_axi_reg2;
 				r_axi_reg3 <= r_axi_reg3;
-				//r_axi_reg3 <= r_axi_reg3;
 			end
 		end
 	end
-	//reg0 is a data recieve reg,is a read only reg
-	/*
-	always @(posedge clock) begin
-	    if(~reset)
-	        r_axi_reg0 <= {P_S_AXI_DATA_WIDTH{1'b0}}; 
-	    else if(user_rx_valid_posedge)
-	        r_axi_reg0 <= {{24{1'b0}},i_user_rx_data};
-	    else
-	        r_axi_reg0 <= r_axi_reg0;
-	end
-*/
-
 	//read reg process
 	always @(posedge clock) begin
 		if(~reset)
@@ -369,7 +327,7 @@
 	//FF for user_rx_valid, aim to edge detect
 	always @(posedge clock) begin
 	    if(~reset)
-	        r_user_rx_valid <= 1'b1;
+	        r_user_rx_valid <= 1'b0;
 	    else
 	        r_user_rx_valid <= i_user_rx_valid;
 	end
@@ -380,28 +338,27 @@
 	    else
 	        r_user_tx_ready <= i_user_tx_ready;
 	end
-
+	//generate tx_valid to make uart transmit data
 	always @(posedge clock) begin
 	    if(~reset)
-	        ro_user_tx_valid <= 1'b0;
+	        r_user_tx_valid <= 1'b0;
 	    else begin
-	        if(~r_tx_fifo_empty_1d && tx_fifo_rvalid)
-	            ro_user_tx_valid <= 1'b1;
+	        if(~tx_fifo_empty_1d && tx_fifo_rvalid)
+	            r_user_tx_valid <= 1'b1;
 	        else if(user_tx_ready_posedge)
-	            ro_user_tx_valid <= 1'b0;
+	            r_user_tx_valid <= 1'b0;
 	        else
-	            ro_user_tx_valid <= ro_user_tx_valid;
+	            r_user_tx_valid <= r_user_tx_valid;
 	    end
 	end
-
+	//unit delay for tx_fifo_empty
 	always @(posedge clock) begin
 		if(~reset)
-			r_tx_fifo_empty_1d <= 1'b1;
+			tx_fifo_empty_1d <= 1'b1;
 		else
-			r_tx_fifo_empty_1d <= tx_fifo_empty;
+			tx_fifo_empty_1d <= tx_fifo_empty;
 	end
-
-				
+	//generate tx_fifo_ren, prepare data for transmitter			
 	always @(posedge clock) begin
 		if(~reset)
 			tx_fifo_ren <=  1'b0;
@@ -412,7 +369,8 @@
 		else
 			tx_fifo_ren <= tx_fifo_ren;
 	end
-
+	//lock signal for tx_fifo_ren, avoid multi read process caused by 
+	//different clk freq between uart and axi lite
 	always @(posedge clock) begin
 		if(~reset)
 			tx_fifo_ren_lock <= 1'b0;
@@ -423,7 +381,7 @@
 		else
 			tx_fifo_ren_lock <= tx_fifo_ren_lock;
 	end
-
+	//UART DRIVER
 	Uart_Driver u_Uart_Driver(
 		.clock           	( clock       ),
 		.reset           	( ~reset   ),         
@@ -431,7 +389,7 @@
 		.o_uart_tx       	( TxD        ),
 		.i_uart_cts      	( CTS       ),
 		.i_user_tx_data  	( w_user_tx_data   ),
-		.i_user_tx_valid 	( ro_user_tx_valid  ),
+		.i_user_tx_valid 	( r_user_tx_valid  ),
 		.o_user_tx_ready 	( i_user_tx_ready  ),
 		.o_user_rx_data  	( w_user_rx_data   ),
 		.o_user_rx_valid 	( i_user_rx_valid  ),
