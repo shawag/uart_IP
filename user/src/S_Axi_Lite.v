@@ -412,7 +412,7 @@
 		.USE_ADV_FEATURES  	( 16'h0000  ))
 	u0_sync_fifo(
 		.clock         	( clock                ),
-		.reset         	( reset                ),
+		.reset         	( ~reset                ),
 		.wr_en         	( tx_fifo_wen ),
 		.wr_ready      	(         ),
 		.din           	( r_axi_reg1[7:0]      ),
@@ -445,7 +445,7 @@
 		.USE_ADV_FEATURES  	( 16'h0000  ))
 	u1_sync_fifo(
 		.clock         	( clock          ),
-		.reset         	( reset          ),
+		.reset         	( ~reset          ),
 		.wr_en         	( rx_fifo_wen    ),
 		.wr_ready      	(   ),
 		.din           	( w_user_rx_data ),
